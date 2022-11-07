@@ -25,6 +25,7 @@ async def on_ready():
     print("We have logged in as {0.user} ".format(bot)) 
     await bot.change_presence( status=discord.Status.online, activity=discord.Game('секретного санту'))
 
+
 #функция записи реквеста в файл
 async def add_req(message, req):
     wb = load_workbook(fn)
@@ -33,8 +34,25 @@ async def add_req(message, req):
     wb.save(fn)
     wb.close
     print('успешная запиь в файл')
-
-
+#функция дополнения реквеста
+async def expand_req(req, str_number):
+    wb = load_workbook(fn)
+    ws = wb['data']
+    ws['B'+ str(str_number)] = str(wb.active.cell(row=str_number, column=2).value) + req.content
+    wb.save(fn)
+    wb.close
+    print('успешная запиь в файл')
+#функция проверки участника на повторное участие
+async def check_participy(message):
+    wb = load_workbook(fn)
+    requestor = message.author.name + '#' + message.author.discriminator
+    for i in range(1,100):
+        value=wb.active.cell(row=i, column=1).value
+        if value == requestor:
+            print (requestor + 'участвует уже, строка №' + str(i))
+            return i
+    print (requestor + 'не участвовал ещё')
+    return False
 
 
 @bot.command( pass_context = True)
@@ -90,7 +108,7 @@ async def on_message(message):
 async def on_message(message):
     await bot.process_commands(message)
     msg = message.content.lower()
-
+    
     if  not message.guild and msg in hello_words:
         await message.channel.send(f'привет котик, {message.author}')
 
@@ -106,12 +124,25 @@ async def on_message(message):
         await message.channel.send (embed = emb)
     if  not message.guild and msg == 'участвовать':
         channel = message.channel
+        if await check_participy(message) != False:
+            print ('уже участвует')
+            await channel.send('ты уже участвуешь, Хочешь что-то добавить?')
+            answer = await bot.wait_for('message')
+            if answer.content == 'да':
+                print('да получено')
+                await channel.send('диктуй свой реквест')
+                expreq = await bot.wait_for('message') 
+                await expand_req(expreq, await check_participy(message))
+            print('да пропущено')
+            return
+        else: 
+            print ('не участвует')
         await channel.send('диктуй свой реквест')
         req = await bot.wait_for('message')
-        add_req(message, req)
+        await add_req(message, req)
         await message.channel.send('Это всё?')
             
-
+#пример ожидания сообщения
 '''@bot.event
 async def on_message(message):
     if message.content.startswith('$greet'):
