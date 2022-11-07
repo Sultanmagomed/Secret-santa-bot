@@ -116,6 +116,28 @@ async def clear_error(ctx, error):
         await ctx.send(f'{ctx.author}, недостаточно прав')
     if isinstance(error, commands.CommandNotFound):
         await ctx.send(f'{ctx.author}, нет такой комманды')
+
+#полигон
+@client.event
+async def on_message(message):
+    if message.content.startswith('$greet'):
+        channel = message.channel
+        await channel.send('Say hello!')
+
+        def check(m):
+            return m.content == 'hello' and m.channel == channel
+
+        msg = await client.wait_for('message', check=check)
+        await channel.send(f'Hello {msg.author}!')
+
+
+
+
+
+
+
+
+
 #connect
 
 

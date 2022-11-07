@@ -9,8 +9,8 @@ ws = wb['data']
 ws['A5'] = 'hello word'
 wb.save(fn)
 wb.close'''
-
 PREFIX = '!'
+fn = 'List_of_santas.xlsx' #xl файл для записи участников и реквестов
 bot = commands.Bot( command_prefix = PREFIX, help_command=None, intents=discord.Intents.all())
 bot.remove_command('help')
 
@@ -19,9 +19,22 @@ hello_words = ['sup', 'hi', 'hellow', 'привет', 'сап', 'драсте', 
 answer_words = ['как дел', 'как дела', 'который час', 'какой сейчас год', 'ты кто', 'кто ты']
 @bot.event
 
+#сообщение о готовности
 async def on_ready():
+    print()
     print("We have logged in as {0.user} ".format(bot)) 
     await bot.change_presence( status=discord.Status.online, activity=discord.Game('секретного санту'))
+
+#функция записи реквеста в файл
+async def add_req(message, req):
+    wb = load_workbook(fn)
+    ws = wb['data']
+    ws.append([message.author.name + '#' + message.author.discriminator, req.content])
+    wb.save(fn)
+    wb.close
+    print('успешная запиь в файл')
+
+
 
 
 @bot.command( pass_context = True)
@@ -72,7 +85,6 @@ async def on_message(message):
         await message.channel.send('привет дружественная форма жизни')
     if msg in answer_words:
         await message.channel.send('не твоё дело, человечек')'''
-fn = 'List_of_santas.xlsx'
 #получение данных в директе от участника
 @bot.event
 async def on_message(message):
@@ -81,11 +93,7 @@ async def on_message(message):
 
     if  not message.guild and msg in hello_words:
         await message.channel.send(f'привет котик, {message.author}')
-        wb = load_workbook(fn)
-        ws = wb['data']
-        ws.append([message.author.name + '#' + message.author.discriminator, msg])
-        wb.save(fn)
-        wb.close
+
 
     if  not message.guild and msg in answer_words:
         await message.channel.send('не твоё дело, человечек')
@@ -96,8 +104,25 @@ async def on_message(message):
         emb.add_field(name = '{}kick'.format(PREFIX), value = 'kick')
         emb.add_field(name = '{}help'.format(PREFIX), value = 'помогай')
         await message.channel.send (embed = emb)
+    if  not message.guild and msg == 'участвовать':
+        channel = message.channel
+        await channel.send('диктуй свой реквест')
+        req = await bot.wait_for('message')
+        add_req(message, req)
+        await message.channel.send('Это всё?')
+            
 
+'''@bot.event
+async def on_message(message):
+    if message.content.startswith('$greet'):
+        channel = message.channel
+        await channel.send('Say hello!')
 
+        def check(m):
+            return m.content == 'hello' and m.channel == channel
+
+        msg = await client.wait_for('message', check=check)
+        await channel.send(f'Hello {msg.author}!')'''
 
 
 
