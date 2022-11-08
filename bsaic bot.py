@@ -129,9 +129,50 @@ async def on_message(message):
 
         msg = await client.wait_for('message', check=check)
         await channel.send(f'Hello {msg.author}!')
+#пример ожидания сообщения
+'''@bot.event
+async def on_message(message):
+    if message.content.startswith('$greet'):
+        channel = message.channel
+        await channel.send('Say hello!')
 
+        def check(m):
+            return m.content == 'hello' and m.channel == channel
 
+        msg = await client.wait_for('message', check=check)
+        await channel.send(f'Hello {msg.author}!')'''
 
+'''#Проверка сообщения на наличие картинок
+    if  not message.guild and message.attachments:
+        files = []
+        print('кол-во вложений = ' + str(len(message.attachments)))
+        print('вложение 1 = ' + str(message.attachments[0].url))
+        for attachment in message.attachments:
+            try:
+                if attachment.content_type.startswith("image/"):
+                    files.append(attachment.url)
+            except:
+                continue
+        if files:
+            print(files)'''
+
+#базовые реакции на сообщения
+'''@bot.event
+async def on_message(message):
+    await bot.process_commands(message)
+    msg = message.content.lower()
+
+    if msg in hello_words:
+        await message.channel.send('привет дружественная форма жизни')
+    if msg in answer_words:
+        await message.channel.send('не твоё дело, человечек')'''
+#пример записи в эксель файл
+'''fn = 'List_of_santas.xlsx'
+wb = load_workbook(fn)
+ws = wb['data']
+ws['A5'] = 'hello word'
+wb.save(fn)
+wb.close'''        
 
 
 
