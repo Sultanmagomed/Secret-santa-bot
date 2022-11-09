@@ -77,6 +77,7 @@ async def time(ctx):
 #send direct message to author
 @client.command()
 async def send_a(ctx):
+    print('реагирует на сенд_а')
     await ctx.author.send('hellow')
 
 #send direct message to another
@@ -97,8 +98,10 @@ async def unban(ctx, *, member):
 
 @client.event
 async def on_message(message):
+    print('реагирует на сообщение')
     await client.process_commands(message)
     msg = message.content.lower()
+    
 
     if msg in hello_words:
         await message.channel.send('привет котик')
