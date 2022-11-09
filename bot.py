@@ -9,8 +9,14 @@ from datetime import datetime
 PREFIX = '!' #префикс для всяких комманд, которые не используются
 fn = 'List_of_santas.xlsx' #xl файл для записи участников и реквестов
 cdtime = datetime.now() #текущая датавремя
-os.remove('log.bak.txt') #удаление старых логов
-shutil.copy('log.txt', 'log.bak.txt') #сохранение логов предыдущего запуска
+try:
+    os.remove('log.bak.txt') #удаление старых логов
+except:
+    print('Файл старых логов не существовал и не удалён')
+try:
+    shutil.copy('log.txt', 'log.bak.txt') #сохранение логов предыдущего запуска
+except:
+    print('файл логов не сущестовал, создан новый файл')
 with open('log.txt','w') as log:#файл логирования консоли
     log.write(str(cdtime)+' создан логфайл\n')
 bot = commands.Bot(command_prefix = PREFIX, help_command=None, intents=discord.Intents.all())
