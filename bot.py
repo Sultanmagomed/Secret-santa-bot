@@ -5,6 +5,7 @@ from openpyxl import load_workbook
 import shutil
 import os
 from datetime import datetime
+from typing import Literal
 
 PREFIX = '!' #префикс для всяких комманд, которые не используются
 fn = 'List_of_santas.xlsx' #xl файл для записи участников и реквестов
@@ -21,7 +22,7 @@ except:
 with open('log.txt','w') as log:#файл логирования консоли
     log.write(str(cdtime)+' создан логфайл\n')
 bot = commands.Bot(command_prefix = PREFIX, help_command=None, intents=discord.Intents.all())
-bot_master_id = 401465528004116481#кто тут истиный данжнмастер в скобках id пользователя, управляющего ботом
+bot_master_id = int(401465528004116481)#кто тут истиный данжнмастер в скобках id пользователя, управляющего ботом
 bot.remove_command('help')
 
 
@@ -49,10 +50,11 @@ async def on_ready():
 #функция записи реквеста в файл
 async def add_req(message, req):
     requestor = message.author.name + '#' + message.author.discriminator
+    requestor_id = str(message.author.id)
     try:
         wb = load_workbook(fn)
         ws = wb['data']
-        ws.append([requestor, req.content, str(await checknget_url(req))])
+        ws.append([requestor_id, requestor, req.content, str(await checknget_url(req))])
         wb.save(fn)
         wb.close
         print('успешная запиь реквеста в файл')
@@ -71,13 +73,13 @@ async def expand_req(req, str_number):
         wb = load_workbook(fn)
         ws = wb['data']
         if req.attachments and str(req.content) != '':                                                                                   #дополнение текстом при наличии картинки
-            ws['B'+ str(str_number)] = str(wb.active.cell(row=str_number, column=2).value) + '. Дополнение: ' + req.content
+            ws['C'+ str(str_number)] = str(wb.active.cell(row=str_number, column=3).value) + '. Дополнение: ' + req.content
         elif not req.attachments:                                                                                                        #дополнение текстом без картинки
-            ws['B'+ str(str_number)] = str(wb.active.cell(row=str_number, column=2).value) + '. Дополнение: ' + req.content
-        if str(wb.active.cell(row=str_number, column=3).value) == None or str(wb.active.cell(row=str_number, column=3).value) == 'None': #дополнение картинкой если не было картинок
-            ws['C'+ str(str_number)] =str(await checknget_url(req))
+            ws['C'+ str(str_number)] = str(wb.active.cell(row=str_number, column=3).value) + '. Дополнение: ' + req.content
+        if str(wb.active.cell(row=str_number, column=3).value) == None or str(wb.active.cell(row=str_number, column=4).value) == 'None': #дополнение картинкой если не было картинок
+            ws['D'+ str(str_number)] =str(await checknget_url(req))
         else:                                                                                                                            #дополнение картинкой если картинки были
-            ws['C'+ str(str_number)] =str(wb.active.cell(row=str_number, column=3).value) + str(await checknget_url(req))
+            ws['D'+ str(str_number)] =str(wb.active.cell(row=str_number, column=4).value) + str(await checknget_url(req))
         wb.save(fn)
         wb.close
         print('успешная запись дополнения в файл')
@@ -95,36 +97,38 @@ async def check_participy(message):
     print ('проверка '+requestor+' на повторное участие')
     wb = load_workbook(fn)
     for i in range(1,500):
-        value=wb.active.cell(row=i, column=1).value
+        value=wb.active.cell(row=i, column=2).value
         if value == requestor:
             print (requestor + 'участвует уже, строка №' + str(i))
             return i
     print (requestor + 'не участвовал ещё')
+    wb.save(fn)
+    wb.close
     return False
 #служебная функция подсчёта количества участников
 async def number_of_participant():
     print ('запрос количества учасиников')
     wb = load_workbook(fn)
     for i in range(1,500):
-        value=wb.active.cell(row=i, column=1).value
+        value=wb.active.cell(row=i, column=2).value
         if str(value) == 'None':
             print ('участвует уже ' + str(i-2) + ' котов')
             participants = i-2
+            wb.save(fn)
+            wb.close
             return participants
 #служебная функция рандомизации исполнителей (временно смещает участников на 1, что впрочем тоже вполне случайно)
 async def mixing_participant():
     wb = load_workbook(fn)
-    boofer = wb.active.cell(row=2, column=1).value
+    boofer_name = wb.active.cell(row=2, column=2).value
+    boofer_id = wb.active.cell(row=2, column=1).value
     for i in range(3,await number_of_participant()+3):
-        wb.active.cell(row=i-1, column=4).value = wb.active.cell(row=i, column=1).value
-    wb.active.cell(row=i-1, column=4).value = boofer
+        wb.active.cell(row=i-1, column=6).value = wb.active.cell(row=i, column=2).value
+        wb.active.cell(row=i-1, column=5).value = wb.active.cell(row=i, column=1).value
+    wb.active.cell(row=i-1, column=6).value = boofer_name
+    wb.active.cell(row=i-1, column=5).value = boofer_id
     wb.save(fn)
     wb.close
-    return
-#служебная функция отправления реквестов исполнителям
-async def send_request():
-    print ('запрос на отправку реквестов исполнителям')
-    
     return
 #функция приёма выполненных реквестов (результатов)
 async def recive_request():
@@ -153,6 +157,26 @@ async def checknget_url(message):
 #функция отправки сообщения владельцу при событии
 async def send_report(message, report):
     await bot.get_user(bot_master_id).send(f'{message.author}'+report)        
+
+#служебная функция отправления реквестов исполнителям
+async def send_request():
+    print ('запрос на отправку реквестов исполнителям')
+    try:
+        wb = load_workbook(fn)
+        for i in range(2,await number_of_participant()+2):
+            exequtor_id=int(wb.active.cell(row=i, column=5).value)
+            request=wb.active.cell(row=i, column=3).value
+            references=wb.active.cell(row=i, column=4).value
+            await bot.get_user(exequtor_id).send('Привет! Принимай реквест. Как закончишь скажи мне "прими результат" или просто "результат" и приложи картинку в сообщение и если хочешь можно какой-то текст, который получит поздравляемый. Помни что срок до 30 декабря 2022 года. Удачи! /n Собственно реквест:')
+            try:
+                await bot.get_user(exequtor_id).send(request+' '+references)
+            except:
+                await bot.get_user(exequtor_id).send(request)
+        wb.save(fn)
+        wb.close
+    except:
+        await bot.get_user(bot_master_id).send('не удалось отправить реквесты')
+    return
 
 #send direct message to author
 @bot.command()
