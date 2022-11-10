@@ -34,6 +34,7 @@ yes_words = ['да', 'lf', 'ja', 'yes', 'es', 'угу']
 no_words = ['нет', 'не', 'ytn', 'no', 'нит']
 help_words = ['help','помогай','помощь','помогит','помогите','объясни','комманды','что делать','как участвовать','харп','херп','хелп','harp','herp','объясните']
 rules_words = ['правила', 'rulz', 'rulez', 'rules', 'как играть', 'как быть сантой','как быть секретным сантой','как жить эту жизнь','рулз','рул']
+recive_words = ['прими результат', 'результат','отправить результат','рисуночек','рисунок','прими рисунок','принемай ']
 
 
 #сообщение о готовности и указание статуса бота
@@ -108,20 +109,22 @@ async def number_of_participant():
         value=wb.active.cell(row=i, column=1).value
         if str(value) == 'None':
             print ('участвует уже ' + str(i-2) + ' котов')
-            return i-2
-#служебная функция рандомизации исполнителей
+            participants = i-2
+            return participants
+#служебная функция рандомизации исполнителей (временно смещает участников на 1, что впрочем тоже вполне случайно)
 async def mixing_participant():
-    print ('запрос на получение исполнителей')
     wb = load_workbook(fn)
     boofer = wb.active.cell(row=2, column=1).value
-    for i in range(3,int(number_of_participant())+3):
-        wb.active.cell(row=i, column=4).value = wb.active.cell(row=i-1, column=1).value
+    for i in range(3,await number_of_participant()+3):
+        wb.active.cell(row=i-1, column=4).value = wb.active.cell(row=i, column=1).value
+    wb.active.cell(row=i-1, column=4).value = boofer
     wb.save(fn)
     wb.close
     return
 #служебная функция отправления реквестов исполнителям
 async def send_request():
     print ('запрос на отправку реквестов исполнителям')
+    
     return
 #функция приёма выполненных реквестов (результатов)
 async def recive_request():
@@ -186,6 +189,12 @@ async def on_message(message):
         emb.add_field(name = 'Правила', value = 'расскажу правила Секретного Санты')
         emb.add_field(name = '. _.', value = 'Можно конечно использовать синонимы комманд, но за их работу сложно поручиться.Реквест можно отправить текстом в сообщении, но не файлом. В сообщение к реквесту можно прикладывать картинки')
         await message.channel.send (embed = emb)
+#Приём результатов от исполнителей
+    '''if not message.guild and msg in recive_words:
+        channel = message.channel
+        requestor = message.author
+        def check(message):
+            return requestor == message.author'''
 #служебный подсчёт участников
     if  bot_master == message.author and not message.guild and msg == 'сколько участников':
         await message.channel.send('Уже участвует '+str(await number_of_participant()) + ' котов')
