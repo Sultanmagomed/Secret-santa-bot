@@ -185,7 +185,7 @@ async def send_a(ctx):
 #send direct message to another
 @bot.command()
 async def send_to(ctx, member: discord.Member):
-    await member.send(f'{member.name}, *текст подтянутый из таблицы в качестве рекветса*')
+    await member.send(f'{member.name}, привет от '+ctx.author.name)
 
 #получение данных в директе от участника (реакция на сообщения пользователя)
 @bot.event
