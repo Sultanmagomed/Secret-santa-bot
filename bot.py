@@ -76,7 +76,7 @@ async def expand_req(req, str_number):
             ws['C'+ str(str_number)] = str(wb.active.cell(row=str_number, column=3).value) + '. Дополнение: ' + req.content
         elif not req.attachments:                                                                                                        #дополнение текстом без картинки
             ws['C'+ str(str_number)] = str(wb.active.cell(row=str_number, column=3).value) + '. Дополнение: ' + req.content
-        if str(wb.active.cell(row=str_number, column=3).value) == None or str(wb.active.cell(row=str_number, column=4).value) == 'None': #дополнение картинкой если не было картинок
+        if str(wb.active.cell(row=str_number, column=4).value) == None or str(wb.active.cell(row=str_number, column=4).value) == 'None': #дополнение картинкой если не было картинок
             ws['D'+ str(str_number)] =str(await checknget_url(req))
         else:                                                                                                                            #дополнение картинкой если картинки были
             ws['D'+ str(str_number)] =str(wb.active.cell(row=str_number, column=4).value) + str(await checknget_url(req))
@@ -92,14 +92,18 @@ async def expand_req(req, str_number):
             log.write(str(cdtime)+" ошибка записи дополнения "+requestor+" в файл "+fn+'\n')
         await send_report(req, ' НЕ дополнил реквест, ошибка записи в файл')
 #функция проверки участника на повторное участие
-async def check_participy(message):
+async def check_participy(message, status):
+    if str(status) == 'requestor':
+        col = 2
+    elif str(status) == 'exequtor':
+        col = 6
     requestor = message.author.name + '#' + message.author.discriminator
-    print ('проверка '+requestor+' на повторное участие')
+    print ('поиск '+requestor+' в столбце исполнителей')
     wb = load_workbook(fn)
     for i in range(1,500):
-        value=wb.active.cell(row=i, column=2).value
+        value=wb.active.cell(row=i, column=col).value
         if value == requestor:
-            print (requestor + 'участвует уже, строка №' + str(i))
+            print (requestor + 'исполнитель, строка №' + str(i))
             return i
     print (requestor + 'не участвовал ещё')
     wb.save(fn)
@@ -131,12 +135,52 @@ async def mixing_participant():
     wb.close
     return
 #функция приёма выполненных реквестов (результатов)
-async def recive_request():
+async def recive_result(message, str_number):
     print ('получение результата от исполнителя')
-    return
+    executor = message.author.name + '#' + message.author.discriminator
+    #try:
+    wb = load_workbook(fn)
+    ws = wb['data']
+    if message.attachments and str(wb.active.cell(row=str_number, column=7).value) == 'None':
+        ws['G'+ str(str_number)] = str(await checknget_url(message))
+    elif message.attachments:
+        ws['G'+ str(str_number)] = str(wb.active.cell(row=str_number, column=7).value) + str(await checknget_url(message))
+    if str(message.content) != '' and str(wb.active.cell(row=str_number, column=8).value) == 'None':
+        ws['H'+ str(str_number)] = message.content
+    elif str(message.content) != '':
+        ws['H'+ str(str_number)] = str(wb.active.cell(row=str_number, column=8).value) + '. Дополнение:' + message.content
+    if str(wb.active.cell(row=str_number, column=8).value) == 'None':
+        ws['H'+ str(str_number)] ='С новым годом!'
+    wb.save(fn)
+    wb.close
+    print('успешная запись результата в файл')
+    with open('log.txt','a') as log:
+        log.write(str(cdtime)+" успешная запиь результата от "+executor+" в файл "+fn+'\n')
+    await send_report(message, ' отправил результат')
+    '''except:
+        print('ошибка записи результата в файл')
+        with open('log.txt','a') as log:
+            log.write(str(cdtime)+" ошибка записи дополнения "+executor+" в файл "+fn+'\n')
+        await send_report(message, ' НЕ отправил результат, ошибка записи в файл')'''
 #служебная функция отправки результатов желателям
 async def send_result():
     print ('запрос на отправку результатов заказчикам')
+    #try:
+    wb = load_workbook(fn)
+    for i in range(2,await number_of_participant()+2):
+        requestor_id=int(wb.active.cell(row=i, column=1).value)
+        print(str(requestor_id))
+        result=wb.active.cell(row=i, column=7).value
+        text_geeting=wb.active.cell(row=i, column=8).value
+        await bot.get_user(requestor_id).send('Привет! Принимай поздравления и свой рисуночек')
+        try:
+            await bot.get_user(requestor_id).send(result+' '+text_geeting)
+        except:
+            await bot.get_user(requestor_id).send(result)
+    wb.save(fn)
+    wb.close
+    #except:
+    #    await bot.get_user(bot_master_id).send('не удалось отправить результаты')
     return
 #функция получения url вложенных картинок
 async def checknget_url(message):
@@ -195,7 +239,7 @@ async def on_message(message):
     bot_master = bot.get_user(bot_master_id)
     #приветсвие
     if  not message.guild and msg in hello_words:
-        await message.channel.send(f'Привет, котик, я помошник секретного санты, принимаю реквесты. Проси помощь и я расскажу что делать')
+        await message.channel.send(f'Привет, котик, я помощник секретного санты, принимаю реквесты. Проси помощь и я расскажу что делать')
         await send_report(message, ' здоровается с ботом')
     #ответ на ненужный вопрос
     if  not message.guild and msg in answer_words:
@@ -214,11 +258,33 @@ async def on_message(message):
         emb.add_field(name = '. _.', value = 'Можно конечно использовать синонимы комманд, но за их работу сложно поручиться.Реквест можно отправить текстом в сообщении, но не файлом. В сообщение к реквесту можно прикладывать картинки')
         await message.channel.send (embed = emb)
 #Приём результатов от исполнителей
-    '''if not message.guild and msg in recive_words:
+    if not message.guild and msg in recive_words :
         channel = message.channel
         requestor = message.author
         def check(message):
-            return requestor == message.author'''
+            return requestor == message.author
+        if await check_participy(message, 'exequtor') != False:
+            print ('уже участвует')
+            await channel.send('Скидывай свой рисунок(ки), можешь дополнить текстовым сообщением, которое получит желатель.\nЕсли у тебя заботливо пподготовлен архив то, пожалуйста, скинь его ссылкой')
+            answer = await bot.wait_for('message', check=check)
+            print('поиск строки исполнителя по исполнителю' + str(await check_participy(message, 'exequtor')) )
+            await recive_result(answer, await check_participy(message, 'exequtor'))
+            await message.channel.send('Результат принят, Секретный Санта')
+        else:
+            print ('не участвует')
+            await channel.send('Но ты ещё не участвуешь, хочешь участвовать?')
+            answer = await bot.wait_for('message', check=check)
+            if answer.content in yes_words:
+                print('да получено')
+                await channel.send('Диктуй свой реквест')
+                req = await bot.wait_for('message', check=check)
+                await add_req(message, req)
+                await message.channel.send('Реквест принят, Секретный Санта')
+            else:
+                await channel.send('Тогда ладно')
+                print('да пропущено')
+            return
+            
 #служебный подсчёт участников
     if  bot_master == message.author and not message.guild and msg == 'сколько участников':
         await message.channel.send('Уже участвует '+str(await number_of_participant()) + ' котов')
@@ -240,7 +306,7 @@ async def on_message(message):
         requestor = message.author
         def check(message):
             return requestor == message.author
-        if await check_participy(message) != False:
+        if await check_participy(message,'requestor') != False:
             print ('уже участвует')
             await channel.send('Ты уже участвуешь, Хочешь что-то добавить?')
             answer = await bot.wait_for('message', check=check)
@@ -248,7 +314,7 @@ async def on_message(message):
                 print('да получено')
                 await channel.send('Диктуй своё дополнение')
                 expreq = await bot.wait_for('message', check=check) 
-                await expand_req(expreq, await check_participy(message))
+                await expand_req(expreq, await check_participy(message, 'requestor'))
                 await message.channel.send('Дополнение принято')
             else:
                 await channel.send('Тогда ладно')
@@ -266,7 +332,7 @@ async def on_message(message):
         requestor = message.author
         def check(message):
             return requestor == message.author        
-        if await check_participy(message) == False:
+        if await check_participy(message,'requestor') == False:
             print ('ещё не участвует')
             await channel.send('Ты ещё не участвуешь, хочешь участвовать?')
             answer = await bot.wait_for('message', check=check)
@@ -284,7 +350,7 @@ async def on_message(message):
             print ('участвует')
             await channel.send('Диктуй своё дополнение')
             expreq = await bot.wait_for('message', check=check) 
-            await expand_req(expreq, await check_participy(message))
+            await expand_req(expreq, await check_participy(message,'requestor'))
             await message.channel.send('Дополнение принято')
 #Реакция на ошибки
 '''@bot.event
