@@ -11,18 +11,20 @@ from typing import Literal
 
 
 PREFIX = '!' #префикс для всяких комманд, которые не используются
-fn = 'List_of_santas.xlsx' #xl файл для записи участников и реквестов
+fn = str(os.path.dirname(__file__))+'/List_of_santas.xlsx' #xl файл для записи участников и реквестов
+lf = str(os.path.dirname(__file__))+'/log.txt'#txt файл логов
+lfbak = str(os.path.dirname(__file__)) + '/log.bak.txt'#txt файл предыдущих логов
 #bot_master = 'bespilotnik#7796' #кто тут истиный данжнмастер, хотя нужен именно id так что эта строчка для наглядности
 cdtime = datetime.now() #текущая датавремя
 try:
-    os.remove('log.bak.txt') #удаление старых логов
+    os.remove(lfbak) #удаление старых логов
 except:
     print('Файл старых логов не существовал и не удалён')
 try:
-    shutil.copy('log.txt', 'log.bak.txt') #сохранение логов предыдущего запуска
+    shutil.copy(lf, lfbak) #сохранение логов предыдущего запуска
 except:
     print('файл логов не сущестовал, создан новый файл')
-with open('log.txt','w') as log:#файл логирования консоли
+with open(lf,'w') as log:#файл логирования консоли
     log.write(str(cdtime)+' создан логфайл\n')
 bot = commands.Bot(command_prefix = PREFIX, help_command=None, intents=discord.Intents.all())
 bot_master_id = int(401465528004116481)#кто тут истиный данжнмастер в скобках id пользователя, управляющего ботом
@@ -45,8 +47,10 @@ async def on_ready():
     print()
     print("Успешно залогинились как {0.user} ".format(bot)) 
     await bot.change_presence( status=discord.Status.online, activity=discord.Game('секретного санту'))
-    with open('log.txt','a') as log:
+    with open(lf,'a') as log:
         log.write(str(cdtime)+" успешно залогинились как {0.user} ".format(bot)+'\n')
+    #print(str(os.path.dirname(os.path.dirname(__file__))))
+    #print(str(os.path.dirname(__file__)))
 
 #функция записи реквеста в файл
 async def add_req(message, req):
@@ -59,12 +63,12 @@ async def add_req(message, req):
         wb.save(fn)
         wb.close
         print('успешная запиь реквеста в файл')
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" успешная запиь реквеста "+requestor+" в файл "+fn+'\n')
         await send_report(req, ' записался в участники')
     except:
         print('ошибка записи')
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" ошибка записи реквеста "+requestor+" в файл "+fn+'\n')
         await send_report(req, ' НЕ записался в участники, ошибка записи в файл')            
 #функция дополнения реквеста
@@ -84,12 +88,12 @@ async def expand_req(req, str_number):
         wb.save(fn)
         wb.close
         print('успешная запись дополнения в файл')
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" успешная запиь дополнения "+requestor+" в файл "+fn+'\n')
         await send_report(req, ' дополнил реквест')
     except:
         print('ошибка записи дополнения в файл')
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" ошибка записи дополнения "+requestor+" в файл "+fn+'\n')
         await send_report(req, ' НЕ дополнил реквест, ошибка записи в файл')
 #функция проверки участника на повторное участие/поиска номера участника как просителя и как рисователя
@@ -155,12 +159,12 @@ async def recive_result(message, str_number):
         wb.save(fn)
         wb.close
         print('успешная запись результата в файл')
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" успешная запиь результата от "+executor+" в файл "+fn+'\n')
         await send_report(message, ' отправил результат')
     except:
         print('ошибка записи результата в файл')
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" ошибка записи результата "+executor+" в файл "+fn+'\n')
         await send_report(message, ' НЕ отправил результат, ошибка записи в файл')
 #служебная функция отправки результатов желателям
@@ -182,11 +186,11 @@ async def send_result():
                     await bot.get_user(requestor_id).send(text_geeting)
         wb.save(fn)
         wb.close
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" результаты отправленны желателям"+'\n')
     except:
         await bot.get_user(bot_master_id).send('не удалось отправить результаты')
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" не удалось отправить результаты желателям"+'\n')
     return
 #функция получения url вложенных картинок
@@ -224,11 +228,11 @@ async def send_request():
                 await bot.get_user(exequtor_id).send(request)
         wb.save(fn)
         wb.close
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" реквесты отправленны рисователям"+'\n')
     except:
         await bot.get_user(bot_master_id).send('не удалось отправить реквесты')
-        with open('log.txt','a') as log:
+        with open(lf,'a') as log:
             log.write(str(cdtime)+" не удалось отправить реквесты рисователям"+'\n')
     return
 
@@ -367,6 +371,6 @@ async def on_message(message):
             await expand_req(expreq, await check_participy(message,'requestor'))
             await message.channel.send('Дополнение принято')
 #connect
-with open('token.txt') as file: #Чтение токена из файла
+with open(str(os.path.dirname(__file__))+'/token.txt') as file: #Чтение токена из файла
     token = file.readline()
 bot.run(token)
