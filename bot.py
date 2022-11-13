@@ -9,7 +9,7 @@ from typing import Literal
 
 PREFIX = '!' #префикс для всяких комманд, которые не используются
 fn = 'List_of_santas.xlsx' #xl файл для записи участников и реквестов
-#bot_master = 'bespilotnik#7796' #кто тут истиный данжнмастер
+#bot_master = 'bespilotnik#7796' #кто тут истиный данжнмастер, хотя нужен именно id так что эта строчка для наглядности
 cdtime = datetime.now() #текущая датавремя
 try:
     os.remove('log.bak.txt') #удаление старых логов
@@ -25,7 +25,6 @@ bot = commands.Bot(command_prefix = PREFIX, help_command=None, intents=discord.I
 bot_master_id = int(401465528004116481)#кто тут истиный данжнмастер в скобках id пользователя, управляющего ботом
 bot.remove_command('help')
 
-
 #словари
 hello_words = ['sup', 'hi', 'hellow', 'привет', 'сап', 'драсте', 'приветствую']
 answer_words = ['как дел', 'как дела', 'который час', 'какой сейчас год','как жить эту ебаную жизнь','в чем смысл жизни']
@@ -35,8 +34,7 @@ yes_words = ['да', 'lf', 'ja', 'yes', 'es', 'угу']
 no_words = ['нет', 'не', 'ytn', 'no', 'нит']
 help_words = ['help','помогай','помощь','помогит','помогите','объясни','комманды','что делать','как участвовать','харп','херп','хелп','harp','herp','объясните']
 rules_words = ['правила', 'rulz', 'rulez', 'rules', 'как играть', 'как быть сантой','как быть секретным сантой','как жить эту жизнь','рулз','рул']
-recive_words = ['прими результат', 'результат','отправить результат','рисуночек','рисунок','прими рисунок','принемай ']
-
+recive_words = ['прими результат', 'результат','отправить результат','рисуночек','рисунок','прими рисунок','принемай']
 
 #сообщение о готовности и указание статуса бота
 @bot.event
@@ -91,7 +89,7 @@ async def expand_req(req, str_number):
         with open('log.txt','a') as log:
             log.write(str(cdtime)+" ошибка записи дополнения "+requestor+" в файл "+fn+'\n')
         await send_report(req, ' НЕ дополнил реквест, ошибка записи в файл')
-#функция проверки участника на повторное участие
+#функция проверки участника на повторное участие/поиска номера участника как просителя и как рисователя
 async def check_participy(message, status):
     if str(status) == 'requestor':
         col = 2
@@ -121,7 +119,7 @@ async def number_of_participant():
             wb.save(fn)
             wb.close
             return participants
-#служебная функция рандомизации исполнителей (временно смещает участников на 1, что впрочем тоже вполне случайно)
+#служебная функция рандомизации исполнителей (временно смещает участников на 1, что впрочем более чем случайно)
 async def mixing_participant():
     wb = load_workbook(fn)
     boofer_name = wb.active.cell(row=2, column=2).value
@@ -138,49 +136,55 @@ async def mixing_participant():
 async def recive_result(message, str_number):
     print ('получение результата от исполнителя')
     executor = message.author.name + '#' + message.author.discriminator
-    #try:
-    wb = load_workbook(fn)
-    ws = wb['data']
-    if message.attachments and str(wb.active.cell(row=str_number, column=7).value) == 'None':
-        ws['G'+ str(str_number)] = str(await checknget_url(message))
-    elif message.attachments:
-        ws['G'+ str(str_number)] = str(wb.active.cell(row=str_number, column=7).value) + str(await checknget_url(message))
-    if str(message.content) != '' and str(wb.active.cell(row=str_number, column=8).value) == 'None':
-        ws['H'+ str(str_number)] = message.content
-    elif str(message.content) != '':
-        ws['H'+ str(str_number)] = str(wb.active.cell(row=str_number, column=8).value) + '. Дополнение:' + message.content
-    if str(wb.active.cell(row=str_number, column=8).value) == 'None':
-        ws['H'+ str(str_number)] ='С новым годом!'
-    wb.save(fn)
-    wb.close
-    print('успешная запись результата в файл')
-    with open('log.txt','a') as log:
-        log.write(str(cdtime)+" успешная запиь результата от "+executor+" в файл "+fn+'\n')
-    await send_report(message, ' отправил результат')
-    '''except:
+    try:
+        wb = load_workbook(fn)
+        ws = wb['data']
+        if message.attachments and str(wb.active.cell(row=str_number, column=7).value) == 'None':
+            ws['G'+ str(str_number)] = str(await checknget_url(message))
+        elif message.attachments:
+            ws['G'+ str(str_number)] = str(wb.active.cell(row=str_number, column=7).value) + str(await checknget_url(message))
+        if str(message.content) != '' and str(wb.active.cell(row=str_number, column=8).value) == 'None':
+            ws['H'+ str(str_number)] = message.content
+        elif str(message.content) != '':
+            ws['H'+ str(str_number)] = str(wb.active.cell(row=str_number, column=8).value) + '. Дополнение:' + message.content
+        if str(wb.active.cell(row=str_number, column=8).value) == 'None':
+            ws['H'+ str(str_number)] ='С новым годом!'
+        wb.save(fn)
+        wb.close
+        print('успешная запись результата в файл')
+        with open('log.txt','a') as log:
+            log.write(str(cdtime)+" успешная запиь результата от "+executor+" в файл "+fn+'\n')
+        await send_report(message, ' отправил результат')
+    except:
         print('ошибка записи результата в файл')
         with open('log.txt','a') as log:
-            log.write(str(cdtime)+" ошибка записи дополнения "+executor+" в файл "+fn+'\n')
-        await send_report(message, ' НЕ отправил результат, ошибка записи в файл')'''
+            log.write(str(cdtime)+" ошибка записи результата "+executor+" в файл "+fn+'\n')
+        await send_report(message, ' НЕ отправил результат, ошибка записи в файл')
 #служебная функция отправки результатов желателям
 async def send_result():
     print ('запрос на отправку результатов заказчикам')
-    #try:
-    wb = load_workbook(fn)
-    for i in range(2,await number_of_participant()+2):
-        requestor_id=int(wb.active.cell(row=i, column=1).value)
-        print(str(requestor_id))
-        result=wb.active.cell(row=i, column=7).value
-        text_geeting=wb.active.cell(row=i, column=8).value
-        await bot.get_user(requestor_id).send('Привет! Принимай поздравления и свой рисуночек')
-        try:
-            await bot.get_user(requestor_id).send(result+' '+text_geeting)
-        except:
-            await bot.get_user(requestor_id).send(result)
-    wb.save(fn)
-    wb.close
-    #except:
-    #    await bot.get_user(bot_master_id).send('не удалось отправить результаты')
+    try:
+        wb = load_workbook(fn)
+        for i in range(2,await number_of_participant()+2):
+            requestor_id=int(wb.active.cell(row=i, column=1).value)
+            result=wb.active.cell(row=i, column=7).value
+            text_geeting=wb.active.cell(row=i, column=8).value
+            await bot.get_user(requestor_id).send('Привет! Принимай поздравления и свой рисуночек')
+            try:
+                await bot.get_user(requestor_id).send(result+' '+text_geeting)
+            except:
+                try:
+                    await bot.get_user(requestor_id).send(result)
+                except:
+                    await bot.get_user(requestor_id).send(text_geeting)
+        wb.save(fn)
+        wb.close
+        with open('log.txt','a') as log:
+            log.write(str(cdtime)+" результаты отправленны желателям"+'\n')
+    except:
+        await bot.get_user(bot_master_id).send('не удалось отправить результаты')
+        with open('log.txt','a') as log:
+            log.write(str(cdtime)+" не удалось отправить результаты желателям"+'\n')
     return
 #функция получения url вложенных картинок
 async def checknget_url(message):
@@ -201,7 +205,6 @@ async def checknget_url(message):
 #функция отправки сообщения владельцу при событии
 async def send_report(message, report):
     await bot.get_user(bot_master_id).send(f'{message.author}'+report)        
-
 #служебная функция отправления реквестов исполнителям
 async def send_request():
     print ('запрос на отправку реквестов исполнителям')
@@ -218,8 +221,12 @@ async def send_request():
                 await bot.get_user(exequtor_id).send(request)
         wb.save(fn)
         wb.close
+        with open('log.txt','a') as log:
+            log.write(str(cdtime)+" реквесты отправленны рисователям"+'\n')
     except:
         await bot.get_user(bot_master_id).send('не удалось отправить реквесты')
+        with open('log.txt','a') as log:
+            log.write(str(cdtime)+" не удалось отправить реквесты рисователям"+'\n')
     return
 
 #send direct message to author
@@ -247,15 +254,16 @@ async def on_message(message):
         await send_report(message, ' задаёт глупый вопрос')
     #Правила
     if  not message.guild and msg in rules_words:
-        await message.channel.send(' О чём это:\n1. Участники тайно сообщают "Санте" (то есть мне, боту Тайного Санты) идею картинки, которую они хотят получить на Новый Год от неизвестного рисователя.\n2. В начале декабря идеи картинок тайным и случайным образом распределяются между участниками.\n3. Каждый участник тайно рисует картинку по желанию от другого неизвестного участника.\n4. Участники сдают выполненные картинки Санте (то есть мне, боту Тайного санты) через личные сообщения.\n5. Под Новый год выполненные картинки отправляются через Санту их желателям.\nПравила:\nТолько Санта знает, какую картинку загадал желающий.\nТолько Санта раздаёт (случайным образом) идеи картинок рисователям.\nСанта НЕ сообщает от кого поступило это желание.\nУчастники никому не сообщают, какую картинку они рисуют.\nДаже если рисователь догадался чьё это желание — ему не стоит сообщать об этом никому (особенно тому, чьё это желание).\nЕсли рисователю нужна дополнительная информация по реквесту - он может спросить @bespilotnik, чтобы тот связался с желающим для уточнения.\nКачество и уровень исполнения никак не нормируется, но некая законченность приветствуется.\nЖелательно следовать реквесту, потому что получить «Два треугольника красный и синий» по запросу «Cырно в комуфляже в лесу собирает Хурму», может быть немного досадно.\nПожалуйста воздержитесь от совсем уж lewd реквестов в этом году. Снова.\nЖелательно предоставить референсы, если вы хотите увидеть что-то конкретное, иначе рисующий может неправильно вас понять. Референсы можно приложить к сообщению с реквестом или добавить позже дополнив реквест, так же можно просто приложить ссылку\nВ первых числах декабря пожелания будут случайно распределены между участниками, которые незамедлительно приступят к рисованию.\nДедлайн сдачи рисунков 30 декабря (пожалуйста не затягивайте до 23:59 31.12.22).\nВыдача подарков — 31 декабря.\n Есть вопросы? - Спросите у @bespilotnik')
+        await message.channel.send(' О чём это:\n1. Участники тайно сообщают "Санте" (то есть мне, боту Тайного Санты) идею картинки, которую они хотят получить на Новый Год от неизвестного рисователя.\n2. В начале декабря идеи картинок тайным и случайным образом распределяются между участниками.\n3. Каждый участник тайно рисует картинку по желанию от другого неизвестного участника.\n4. Участники сдают выполненные картинки Санте (то есть мне, боту Тайного санты) через личные сообщения.\n5. Под Новый год выполненные картинки отправляются через бота Тайного Санты их желателям.\nПравила:\nТолько Санта знает, какую картинку загадал желающий.\nТолько Санта раздаёт (случайным образом) идеи картинок рисователям.\nСанта НЕ сообщает от кого поступило это желание.\nУчастники никому не сообщают, какую картинку они рисуют.\nДаже если рисователь догадался чьё это желание — ему не стоит сообщать об этом никому (особенно тому, чьё это желание).\nЕсли рисователю нужна дополнительная информация по реквесту - он может спросить @bespilotnik, чтобы тот связался с желающим для уточнения.\nКачество и уровень исполнения никак не нормируется, но некая законченность приветствуется.\nЖелательно следовать реквесту, потому что получить «Два треугольника красный и синий» по запросу «Cырно в камуфляже в лесу собирает Хурму», может быть немного досадно.\nПожалуйста воздержитесь от совсем уж lewd реквестов в этом году. Снова.\nЖелательно предоставить референсы, если вы хотите увидеть что-то конкретное, иначе рисующий может неправильно вас понять. Референсы можно приложить к сообщению с реквестом картинкой или добавить позже дополнив реквест, так же можно просто приложить ссылку\nВ первых числах декабря пожелания будут случайно распределены между участниками, которые незамедлительно приступят к рисованию.\nДедлайн сдачи рисунков 30 декабря (пожалуйста не затягивайте до 23:59 31.12.22).\nВыдача подарков — 31 декабря.\n Есть вопросы? - Спросите у @bespilotnik')
     #herp
     if  not message.guild and msg in help_words:
         emb = discord.Embed(title = 'что говорить?')
         emb.add_field(name = 'Участвовать', value = 'чтобы записаться и сказать свой реквест')
         emb.add_field(name = 'Дополнить', value = 'если уже участвуешь можно дополнить свой реквест')
+        emb.add_field(name = 'Результат', value = 'если уже всё нарисовано чтобы отправить свой рисунок и пожелания')
         emb.add_field(name = 'Херп', value = 'помогай')
         emb.add_field(name = 'Правила', value = 'расскажу правила Секретного Санты')
-        emb.add_field(name = '. _.', value = 'Можно конечно использовать синонимы комманд, но за их работу сложно поручиться.Реквест можно отправить текстом в сообщении, но не файлом. В сообщение к реквесту можно прикладывать картинки')
+        emb.add_field(name = '. _.', value = 'Можно использовать синонимы команд, но за их работу сложно поручиться. Реквест можно отправить текстом в сообщении, но не файлом. В сообщение к реквесту можно прикладывать картинки')
         await message.channel.send (embed = emb)
 #Приём результатов от исполнителей
     if not message.guild and msg in recive_words :
@@ -264,13 +272,13 @@ async def on_message(message):
         def check(message):
             return requestor == message.author
         if await check_participy(message, 'exequtor') != False:
-            print ('уже участвует')
+            print ('уже участвует реквесты розданы')
             await channel.send('Скидывай свой рисунок(ки), можешь дополнить текстовым сообщением, которое получит желатель.\nЕсли у тебя заботливо пподготовлен архив то, пожалуйста, скинь его ссылкой')
             answer = await bot.wait_for('message', check=check)
             print('поиск строки исполнителя по исполнителю' + str(await check_participy(message, 'exequtor')) )
             await recive_result(answer, await check_participy(message, 'exequtor'))
             await message.channel.send('Результат принят, Секретный Санта')
-        else:
+        elif await check_participy(message, 'requestor') == False:
             print ('не участвует')
             await channel.send('Но ты ещё не участвуешь, хочешь участвовать?')
             answer = await bot.wait_for('message', check=check)
@@ -284,6 +292,9 @@ async def on_message(message):
                 await channel.send('Тогда ладно')
                 print('да пропущено')
             return
+        else:
+            print ('уже участвует реквесты НЕ розданы')
+            await channel.send('Реквесты ещё не розданы, случайные картинки не принемаются')
             
 #служебный подсчёт участников
     if  bot_master == message.author and not message.guild and msg == 'сколько участников':
@@ -352,18 +363,6 @@ async def on_message(message):
             expreq = await bot.wait_for('message', check=check) 
             await expand_req(expreq, await check_participy(message,'requestor'))
             await message.channel.send('Дополнение принято')
-#Реакция на ошибки
-'''@bot.event
-async def on_command_error (ctx, error):
-    pass
-@clear.error
-async def clear_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send(f'{ctx.author}, сколько сообщений удалить?')
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send(f'{ctx.author}, недостаточно прав')
-    if isinstance(error, commands.CommandNotFound):
-        await ctx.send(f'{ctx.author}, нет такой комманды')'''
 #connect
 with open('token.txt') as file: #Чтение токена из файла
     token = file.readline()
