@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf8 -*-
 from pydoc import cli
 import discord
 from discord.ext import commands
@@ -6,6 +8,7 @@ import shutil
 import os
 from datetime import datetime
 from typing import Literal
+
 
 PREFIX = '!' #префикс для всяких комманд, которые не используются
 fn = 'List_of_santas.xlsx' #xl файл для записи участников и реквестов
