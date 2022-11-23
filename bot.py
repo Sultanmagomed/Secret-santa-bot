@@ -371,6 +371,6 @@ async def on_message(message):
             await expand_req(expreq, await check_participy(message,'requestor'))
             await message.channel.send('Дополнение принято')
 #connect
-with open(str(os.path.dirname(__file__))+'/token.txt') as file: #Чтение токена из файла
+with open(str(os.path.dirname(__file__))+'/pybot token.txt') as file: #Чтение токена из файла
     token = file.readline()
 bot.run(token)
