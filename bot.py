@@ -11,10 +11,11 @@ from typing import Literal
 
 
 PREFIX = '!' #префикс для всяких комманд, которые не используются
-fn = str(os.path.dirname(__file__))+'/List_of_santas.xlsx' #xl файл для записи участников и реквестов
-lf = str(os.path.dirname(__file__))+'/log.txt'#txt файл логов
-lfbak = str(os.path.dirname(__file__)) + '/log.bak.txt'#txt файл предыдущих логов
-#bot_master = 'bespilotnik#7796' #кто тут истиный данжнмастер, хотя нужен именно id так что эта строчка для наглядности
+token_file = 'pybot token.txt' #имя файла с токеном 
+fn = str(os.path.dirname(__file__))+'/'+'List_of_santas.xlsx' #xl файл для записи участников и реквестов
+lf = str(os.path.dirname(__file__))+'/'+'log.txt'#txt файл логов
+lfbak = str(os.path.dirname(__file__))+'/'+'log.bak.txt'#txt файл предыдущих логов
+#bot_master = 'bespilotnik#7796' #кто тут истиный данжнмастер, хотя нужен именно id так что эта строчка бесполезна
 cdtime = datetime.now() #текущая датавремя
 try:
     os.remove(lfbak) #удаление старых логов
@@ -40,6 +41,7 @@ no_words = ['нет', 'не', 'ytn', 'no', 'нит']
 help_words = ['help','помогай','помощь','помогит','помогите','объясни','комманды','что делать','как участвовать','харп','херп','хелп','harp','herp','объясните']
 rules_words = ['правила', 'rulz', 'rulez', 'rules', 'как играть', 'как быть сантой','как быть секретным сантой','как жить эту жизнь','рулз','рул']
 recive_words = ['прими результат', 'результат','отправить результат','рисуночек','рисунок','прими рисунок','принемай']
+master_word = ['сколько участников', 'перемешай', 'отправь реквесты', 'отправь результаты']
 
 #сообщение о готовности и указание статуса бота
 @bot.event
@@ -51,7 +53,11 @@ async def on_ready():
         log.write(str(cdtime)+" успешно залогинились как {0.user} ".format(bot)+'\n')
     #print(str(os.path.dirname(os.path.dirname(__file__))))
     #print(str(os.path.dirname(__file__)))
-
+#функция обновления статуса
+async def satus_update():
+    #await bot.change_presence( status=discord.Status.online, activity=discord.Game('Уже участвует '+str(await number_of_participant()) + ' котов'))
+    await bot.change_presence(status = discord.Status.idle, activity = discord.Activity(name = 'за '+str(await number_of_participant()) + ' участниками', type = discord.ActivityType.watching))
+    print(await number_of_participant())
 #функция записи реквеста в файл
 async def add_req(message, req):
     requestor = message.author.name + '#' + message.author.discriminator
@@ -251,10 +257,12 @@ async def on_message(message):
     await bot.process_commands(message)
     msg = message.content.lower()
     bot_master = bot.get_user(bot_master_id)
+
     #приветсвие
     if  not message.guild and msg in hello_words:
         await message.channel.send(f'Привет, котик, я помощник секретного санты, принимаю реквесты. Проси помощь и я расскажу что делать')
         await send_report(message, ' здоровается с ботом')
+        await satus_update()
     #ответ на ненужный вопрос
     if  not message.guild and msg in answer_words:
         await message.channel.send('42, человечек')
@@ -371,6 +379,6 @@ async def on_message(message):
             await expand_req(expreq, await check_participy(message,'requestor'))
             await message.channel.send('Дополнение принято')
 #connect
-with open(str(os.path.dirname(__file__))+'/pybot token.txt') as file: #Чтение токена из файла
+with open(str(os.path.dirname(__file__))+'/'+ token_file) as file: #Чтение токена из файла
     token = file.readline()
 bot.run(token)
