@@ -53,11 +53,9 @@ async def on_ready():
         log.write(str(cdtime)+" успешно залогинились как {0.user} ".format(bot)+'\n')
     #print(str(os.path.dirname(os.path.dirname(__file__))))
     #print(str(os.path.dirname(__file__)))
-#функция обновления статуса
+#функция обновления статуса по числу участников
 async def satus_update():
-    #await bot.change_presence( status=discord.Status.online, activity=discord.Game('Уже участвует '+str(await number_of_participant()) + ' котов'))
     await bot.change_presence(status = discord.Status.idle, activity = discord.Activity(name = 'за '+str(await number_of_participant()) + ' участниками', type = discord.ActivityType.watching))
-    print(await number_of_participant())
 #функция записи реквеста в файл
 async def add_req(message, req):
     requestor = message.author.name + '#' + message.author.discriminator
@@ -262,7 +260,6 @@ async def on_message(message):
     if  not message.guild and msg in hello_words:
         await message.channel.send(f'Привет, котик, я помощник секретного санты, принимаю реквесты. Проси помощь и я расскажу что делать')
         await send_report(message, ' здоровается с ботом')
-        await satus_update()
     #ответ на ненужный вопрос
     if  not message.guild and msg in answer_words:
         await message.channel.send('42, человечек')
@@ -352,6 +349,7 @@ async def on_message(message):
         req = await bot.wait_for('message', check=check)
         await add_req(message, req)
         await message.channel.send('Реквест принят, Секретный Санта')
+        await satus_update()
 #Прямое дополнение реквеста с проверкой на участие (надо сделать отдельную функцию принятия реквеста и отдельную дополнения)
     if  not message.guild and msg in adding_words:
         channel = message.channel
